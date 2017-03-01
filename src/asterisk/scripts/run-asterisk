@@ -1,0 +1,25 @@
+#!/bin/sh
+
+mkdir -p -m 750 $SNAP_DATA/asterisk/var/spool
+mkdir -p -m 750 $SNAP_DATA/asterisk/var/run/asterisk
+mkdir -p -m 750 $SNAP_DATA/asterisk/var/log/asterisk
+mkdir -p -m 750 $SNAP_DATA/asterisk/etc
+mkdir -p -m 750 $SNAP_DATA/asterisk/var/lib/asterisk
+
+if [ ! -d $SNAP_DATA/asterisk/var/spool/asterisk ]; then
+    cp -r $SNAP/var/spool/asterisk $SNAP_DATA/asterisk/var/spool/
+fi
+
+if [ ! -d $SNAP_DATA/asterisk/var/lib/asterisk/agi-bin ]; then
+    cp -rf $SNAP/var/lib/asterisk/* $SNAP_DATA/asterisk/var/lib/asterisk/
+    cp -rf $SNAP/usr/share/asterisk/* $SNAP_DATA/asterisk/var/lib/asterisk/
+fi
+
+if [ ! -d $SNAP_DATA/asterisk/etc/asterisk ]; then
+    cp -r $SNAP/etc/asterisk $SNAP_DATA/asterisk/etc
+    cp $SNAP/etc/asterisk.conf $SNAP_DATA/asterisk/etc/asterisk
+    cp $SNAP/etc/http.conf $SNAP_DATA/asterisk/etc/asterisk
+    cp $SNAP/etc/manager.conf $SNAP_DATA/asterisk/etc/asterisk
+fi
+
+$SNAP/usr/sbin/asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf -f

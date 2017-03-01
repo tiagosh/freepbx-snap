@@ -1,0 +1,8 @@
+#!/bin/bash
+export INSTALL_PREFIX=$SNAP
+export INSTALL_PREFIX_DATA=$SNAP_DATA/asterisk/
+export ASTERISK_CMD="asterisk -C $INSTALL_PREFIX_DATA/etc/asterisk/asterisk.conf"
+export MYSQLSOCK="$SNAP_DATA/mysql/mysql.sock"
+
+
+/var/snap/freepbx/current/asterisk/bin/fwconsole $@

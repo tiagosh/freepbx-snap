@@ -1,0 +1,271 @@
+name: freepbx
+version: 13.0
+summary: FreePBX
+description: |
+ FreePBX is a web-based open source GUI (graphical user interface) that 
+ controls and manages Asterisk (PBX), an open source communication server.
+#confinement: strict
+
+apps:
+  fwconsole:
+    command: bin/fwconsole
+    plugs: [network, network-bind]
+
+  # Apache daemon
+  apache:
+    command: run-httpd -k start -DFOREGROUND
+    stop-command: run-httpd -k stop
+    daemon: simple
+    restart-condition: always
+    plugs: [network, network-bind]
+
+  # MySQL daemon
+  mysql:
+    command: start_mysql
+    stop-command: support-files/mysql.server stop
+    daemon: simple
+    restart-condition: always
+    plugs: [network, network-bind]
+
+  # PHP FPM daemon
+  php-fpm:
+    command: start-php-fpm
+    daemon: simple
+    restart-condition: always
+    plugs: [network, network-bind]
+
+  # MySQL client
+  mysql-client:
+    command: mysql --defaults-file=$SNAP_DATA/mysql/root.ini
+    plugs: [network, network-bind]
+
+  # asterisk daemon
+  asterisk:
+    command: bin/alsa-wrapper run-asterisk
+    daemon: simple
+    restart-condition: always
+    plugs: [network, network-bind, alsa, pulseaudio]
+
+  # asterisk client command
+  asterisk-client:
+    command: asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf
+    plugs: [network]
+
+parts:
+  apache:
+    plugin: apache
+    source: http://ftp.wayne.edu/apache/httpd/httpd-2.4.25.tar.bz2
+
+    # The built-in Apache modules to enable
+    modules:
+      - headers
+      - proxy
+      - proxy_fcgi
+      - setenvif
+      - env
+      - rewrite
+      - mime
+      - dir
+      - authz_core
+      - unixd
+      - alias
+      - ssl
+      - socache_shmcb
+
+    filesets:
+      exclude:
+        - -man
+        - -manual
+        - -htdocs
+        - -include
+        - -build
+        - -conf/httpd.conf
+        - -conf/magic
+        - -conf/original
+        - -conf/extra
+        - -bin/apachectl
+        - -bin/envvars*
+    stage:
+      - $exclude
+    prime:
+      - $exclude
+
+  apache-customizations:
+    plugin: dump
+    organize:
+      src/apache/scripts/*: bin/
+      src/apache/conf/*: conf/
+
+  freepbx:
+    plugin: dump
+    source-type: git
+    source-branch: snap
+    source: https://github.com/tiagosh/freepbx.git
+    organize:
+      '*': freepbx
+    stage:
+      - freepbx
+
+  php:
+    plugin: php
+    source: http://mirror.cogentco.com/pub/php/php-5.6.29.tar.xz
+    source-type: tar
+    install-via: prefix
+    configflags:
+      - --enable-fpm
+      - --disable-cgi
+      - --disable-phar
+      - --disable-phpdbg
+      - --enable-ctype
+      - --enable-mbstring
+      - --enable-zip
+      - --with-pdo-mysql
+      - --with-zlib
+      - --with-gd
+      - --with-curl
+      - --with-openssl
+      - --with-bz2
+      - --with-mcrypt
+      - --with-gettext
+      - --enable-exif
+      - --enable-intl
+      - --with-jpeg-dir=/usr/lib
+      - --disable-rpath
+    stage-packages:
+      - libpng12-0
+    build-packages:
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libpng12-dev
+      - libjpeg-turbo8-dev
+      - libbz2-dev
+      - libmcrypt-dev
+    prime:
+     - -sbin/
+     - -etc/
+    organize:
+      # Put php-fpm in bin with everything else, not sbin.
+      sbin/php-fpm: bin/php-fpm
+
+  # Copy over our PHP configuration file.
+  php-customizations:
+    plugin: dump
+    organize:
+      src/php/config/*: config/php/
+      src/php/scripts/*: bin/
+    stage-packages: [mawk]
+
+  asterisk-customizations:
+    plugin: dump
+    organize:
+      src/asterisk/scripts/*: bin/
+      src/asterisk/conf/*: etc/
+    stage-packages:
+      - asterisk
+      - asterisk-modules
+      - asterisk-moh-opsound-g722
+      - asterisk-moh-opsound-gsm
+      - asterisk-moh-opsound-wav
+      - asterisk-core-sounds-en
+      - asterisk-core-sounds-en-g722
+      - asterisk-core-sounds-en-gsm
+      - asterisk-core-sounds-en-wav
+      - asterisk-voicemail
+      - asterisk-voicemail-odbcstorage
+      - asterisk-ooh323
+      - asterisk-mobile
+      - asterisk-mysql
+      - asterisk-espeak
+      - asterisk-flite
+      - asterisk-mp3
+      - libasterisk-agi-perl
+      - sox
+      - mpg123
+      - pulseaudio
+      - libasound2-data
+      - locales
+
+  # Download the boost headers for MySQL. Note that the version used may need to
+  # be updated if the version of MySQL changes.
+  boost:
+    plugin: dump
+    source: http://sourceforge.net/projects/boost/files/boost/1.59.0/boost_1_59_0.tar.gz
+    organize:
+      '*': boost/
+    prime:
+      - -*
+
+  mysql:
+    plugin: cmake
+    source: https://github.com/kyrofa/mysql-server.git
+    source-type: git
+    source-branch: feature/support_no_setpriority
+    after: [boost]
+    configflags:
+      - -DDOWNLOAD_BOOST=1
+      - -DWITH_BOOST=$SNAPCRAFT_STAGE/boost
+      - -DWITH_INNODB_PAGE_CLEANER_PRIORITY=OFF
+      - -DCMAKE_INSTALL_PREFIX=/
+      - -DBUILD_CONFIG=mysql_release
+      - -DWITH_UNIT_TESTS=OFF
+      - -DWITH_EMBEDDED_SERVER=OFF
+      - -DWITH_EMBEDDED_SHARED_LIBRARY=OFF
+      - -DWITH_ARCHIVE_STORAGE_ENGINE=OFF
+      - -DWITH_BLACKHOLE_STORAGE_ENGINE=OFF
+      - -DWITH_FEDERATED_STORAGE_ENGINE=OFF
+      - -DWITH_PARTITION_STORAGE_ENGINE=OFF
+      - -DINSTALL_MYSQLTESTDIR=
+    build-packages:
+      - wget
+      - g++
+      - cmake
+      - bison
+      - libncurses5-dev
+      - libaio-dev
+    stage:
+      # Remove scripts that we'll be replacing with our own
+      - -support-files/mysql.server
+    prime:
+      # Remove scripts that we'll be replacing with our own
+      - -support-files/mysql.server
+
+      # Remove unused binaries that waste space
+      - -bin/innochecksum
+      - -bin/lz4_decompress
+      - -bin/myisam*
+      - -bin/mysqladmin
+      - -bin/mysqlbinlog
+      - -bin/mysql_client_test
+      - -bin/mysql_config*
+      - -bin/mysqld_multi
+      - -bin/mysqldump*
+      - -bin/mysqlimport
+      - -bin/mysql_install_db
+      - -bin/mysql_plugin
+      - -bin/mysqlpump
+      - -bin/mysql_secure_installation
+      - -bin/mysqlshow
+      - -bin/mysqlslap
+      - -bin/mysql_ssl_rsa_setup
+      - -bin/mysqltest
+      - -bin/mysql_tzinfo_to_sql
+      - -bin/perror
+      - -bin/replace
+      - -bin/resolveip
+      - -bin/resolve_stack_dump
+      - -bin/zlib_decompress
+
+  # Copy over our MySQL scripts
+  mysql-customizations:
+    plugin: dump
+    organize:
+      src/mysql/start_mysql: bin/
+      src/mysql/my.cnf: my.cnf
+      src/mysql/mysql.server: support-files/
+
+  # this is needed to make asterisk server work, otherwise pjsip fails to initiate
+  alsa-wrapper:
+    plugin: dump
+    source: src/alsa-wrapper/
+    stage-packages:
+      - alsa-utils

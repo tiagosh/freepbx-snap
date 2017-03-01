@@ -1,0 +1,35 @@
+#!/bin/bash
+
+export INSTALL_PREFIX=$SNAP
+export INSTALL_PREFIX_DATA=$SNAP_DATA/asterisk/
+export ASTERISK_CMD="asterisk -C $INSTALL_PREFIX_DATA/etc/asterisk/asterisk.conf"
+export MYSQLSOCK="$SNAP_DATA/mysql/mysql.sock"
+
+while [ ! -S $AMPDBSOCK ]; do
+    sleep 1
+done
+
+while [ ! -S $SNAP_DATA/asterisk/var/run/asterisk/asterisk.ctl ]; do
+    sleep 1
+done
+
+mkdir -p -m 750 $SNAP_DATA/apache/logs
+
+if [ ! -d $SNAP_DATA/htdocs ]; then
+    while [ ! -f $SNAP_DATA/mysql/freepbx_password_root ]; do
+        sleep 1
+    done
+    cp -r $SNAP/freepbx/ $SNAP_DATA/freepbx
+    pushd $SNAP_DATA/freepbx/
+    mkdir -p $SNAP_DATA/htdocs
+    mkdir -p $SNAP_DATA/asterisk/{bin,sbin}
+    ./install -n --rootdb --dbhost=127.0.0.1 --dbpass="$(cat $SNAP_DATA/mysql/freepbx_password_root)" --dbuser=root --user=root --group=root --webroot=$SNAP_DATA/htdocs --ampbin=$SNAP_DATA/asterisk/bin --ampsbin=$SNAP_DATA/asterisk/sbin --astetcdir=$SNAP_DATA/asterisk/etc/asterisk
+    $SNAP_DATA/asterisk/bin/fwconsole chown
+    $SNAP_DATA/asterisk/bin/fwconsole moduleadmin installlocal
+    popd
+    rm -rf $SNAP_DATA/freepbx
+fi
+
+rm $SNAP_DATA/mysql/freepbx_password_root
+
+httpd -d $SNAP $@
