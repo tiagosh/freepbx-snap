@@ -204,6 +204,7 @@ parts:
     configflags:
       - -DDOWNLOAD_BOOST=1
       - -DWITH_BOOST=$SNAPCRAFT_STAGE/boost
+      - -DDOWNLOAD_BOOST_TIMEOUT=3600
       - -DWITH_INNODB_PAGE_CLEANER_PRIORITY=OFF
       - -DCMAKE_INSTALL_PREFIX=/
       - -DBUILD_CONFIG=mysql_release
