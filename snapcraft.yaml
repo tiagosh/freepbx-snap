@@ -102,7 +102,7 @@ parts:
     source-branch: snap
     source: https://github.com/tiagosh/freepbx.git
     organize:
-      '*': freepbx
+      '*': freepbx/
     stage:
       - freepbx
 
@@ -183,6 +183,7 @@ parts:
       - mpg123
       - pulseaudio
       - libasound2-data
+      - libasound2-plugins
       - locales
 
   # Download the boost headers for MySQL. Note that the version used may need to
