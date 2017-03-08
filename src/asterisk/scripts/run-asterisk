@@ -1,5 +1,11 @@
 #!/bin/sh
 
+export MYSQLSOCK="$SNAP_DATA/mysql/mysql.sock"
+
+while [ ! -S $MYSQLSOCK ]; do
+    sleep 1
+done
+
 mkdir -p -m 750 $SNAP_DATA/asterisk/var/spool
 mkdir -p -m 750 $SNAP_DATA/asterisk/var/run/asterisk
 mkdir -p -m 750 $SNAP_DATA/asterisk/var/log/asterisk
@@ -20,6 +26,8 @@ if [ ! -d $SNAP_DATA/asterisk/etc/asterisk ]; then
     cp $SNAP/etc/asterisk.conf $SNAP_DATA/asterisk/etc/asterisk
     cp $SNAP/etc/http.conf $SNAP_DATA/asterisk/etc/asterisk
     cp $SNAP/etc/manager.conf $SNAP_DATA/asterisk/etc/asterisk
+    cp $SNAP/etc/res_config_mysql.conf $SNAP_DATA/asterisk/etc/asterisk
+    cp $SNAP/etc/extconfig.conf $SNAP_DATA/asterisk/etc/asterisk
 fi
 
-$SNAP/usr/sbin/asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf -f
+preload $SNAP/usr/sbin/asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf -f

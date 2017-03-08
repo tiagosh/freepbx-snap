@@ -185,6 +185,7 @@ parts:
       - libasound2-data
       - libasound2-plugins
       - locales
+      - libsqliteodbc
 
   # Download the boost headers for MySQL. Note that the version used may need to
   # be updated if the version of MySQL changes.
@@ -271,3 +272,11 @@ parts:
     source: src/alsa-wrapper/
     stage-packages:
       - alsa-utils
+
+  preload:
+    source: https://github.com/sergiusens/snapcraft-preload.git
+    source-type: git
+    plugin: cmake
+    build-packages:
+      - gcc-multilib
+      - g++-multilib
