@@ -6,17 +6,17 @@ export ASTERISK_CMD="asterisk -C $INSTALL_PREFIX_DATA/etc/asterisk/asterisk.conf
 export MYSQLSOCK="$SNAP_DATA/mysql/mysql.sock"
 export ASTERISK_CTL="$SNAP_DATA/asterisk/var/run/asterisk/asterisk.ctl"
 
-while [ ! -S $MYSQLSOCK ]; do
-    sleep 1
-done
-
-while [ ! -S $ASTERISK_CTL ]; do
-    sleep 1
-done
-
-mkdir -p -m 750 $SNAP_DATA/apache/logs
-
 if [ ! -d $SNAP_DATA/htdocs ]; then
+    while [ ! -S $MYSQLSOCK ]; do
+        sleep 1
+    done
+
+    while [ ! -S $ASTERISK_CTL ]; do
+        sleep 1
+    done
+
+    mkdir -p -m 750 $SNAP_DATA/apache/logs
+
     while [ ! -f $SNAP_DATA/mysql/freepbx_password_root ]; do
         sleep 1
     done

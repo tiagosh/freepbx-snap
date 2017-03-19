@@ -274,8 +274,9 @@ parts:
       - alsa-utils
 
   preload:
-    source: https://github.com/sergiusens/snapcraft-preload.git
+    source: https://github.com/tiagosh/snapcraft-preload
     source-type: git
+    source-branch: skip-setgid-chown
     plugin: cmake
     build-packages:
       - gcc-multilib

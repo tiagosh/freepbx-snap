@@ -30,4 +30,4 @@ if [ ! -d $SNAP_DATA/asterisk/etc/asterisk ]; then
     cp $SNAP/etc/extconfig.conf $SNAP_DATA/asterisk/etc/asterisk
 fi
 
-preload $SNAP/usr/sbin/asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf -f
+snapcraft-preload $SNAP/usr/sbin/asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf -f
