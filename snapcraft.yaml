@@ -41,7 +41,8 @@ apps:
 
   # asterisk daemon
   asterisk:
-    command: bin/alsa-wrapper run-asterisk
+    command: bin/alsa-wrapper run-asterisk start
+    stop-command: bin/alsa-wrapper run-asterisk stop
     daemon: simple
     restart-condition: always
     plugs: [network, network-bind, alsa, pulseaudio]

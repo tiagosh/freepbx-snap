@@ -1,33 +1,51 @@
 #!/bin/sh
 
-export MYSQLSOCK="$SNAP_DATA/mysql/mysql.sock"
+ATERISK_CMD="snapcraft-preload $SNAP/usr/sbin/asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf"
 
-while [ ! -S $MYSQLSOCK ]; do
-    sleep 1
-done
+start_asterisk()
+{
+    export MYSQLSOCK="$SNAP_DATA/mysql/mysql.sock"
 
-mkdir -p -m 750 $SNAP_DATA/asterisk/var/spool
-mkdir -p -m 750 $SNAP_DATA/asterisk/var/run/asterisk
-mkdir -p -m 750 $SNAP_DATA/asterisk/var/log/asterisk
-mkdir -p -m 750 $SNAP_DATA/asterisk/etc
-mkdir -p -m 750 $SNAP_DATA/asterisk/var/lib/asterisk
+    while [ ! -S $MYSQLSOCK ]; do
+        sleep 1
+    done
 
-if [ ! -d $SNAP_DATA/asterisk/var/spool/asterisk ]; then
-    cp -r $SNAP/var/spool/asterisk $SNAP_DATA/asterisk/var/spool/
-fi
+    mkdir -p -m 750 $SNAP_DATA/asterisk/var/spool
+    mkdir -p -m 750 $SNAP_DATA/asterisk/var/run/asterisk
+    mkdir -p -m 750 $SNAP_DATA/asterisk/var/log/asterisk
+    mkdir -p -m 750 $SNAP_DATA/asterisk/etc
+    mkdir -p -m 750 $SNAP_DATA/asterisk/var/lib/asterisk
 
-if [ ! -d $SNAP_DATA/asterisk/var/lib/asterisk/agi-bin ]; then
-    cp -rf $SNAP/var/lib/asterisk/* $SNAP_DATA/asterisk/var/lib/asterisk/
-    cp -rf $SNAP/usr/share/asterisk/* $SNAP_DATA/asterisk/var/lib/asterisk/
-fi
+    if [ ! -d $SNAP_DATA/asterisk/var/spool/asterisk ]; then
+        cp -r $SNAP/var/spool/asterisk $SNAP_DATA/asterisk/var/spool/
+    fi
 
-if [ ! -d $SNAP_DATA/asterisk/etc/asterisk ]; then
-    cp -r $SNAP/etc/asterisk $SNAP_DATA/asterisk/etc
-    cp $SNAP/etc/asterisk.conf $SNAP_DATA/asterisk/etc/asterisk
-    cp $SNAP/etc/http.conf $SNAP_DATA/asterisk/etc/asterisk
-    cp $SNAP/etc/manager.conf $SNAP_DATA/asterisk/etc/asterisk
-    cp $SNAP/etc/res_config_mysql.conf $SNAP_DATA/asterisk/etc/asterisk
-    cp $SNAP/etc/extconfig.conf $SNAP_DATA/asterisk/etc/asterisk
-fi
+    if [ ! -d $SNAP_DATA/asterisk/var/lib/asterisk/agi-bin ]; then
+        cp -rf $SNAP/var/lib/asterisk/* $SNAP_DATA/asterisk/var/lib/asterisk/
+        cp -rf $SNAP/usr/share/asterisk/* $SNAP_DATA/asterisk/var/lib/asterisk/
+    fi
 
-snapcraft-preload $SNAP/usr/sbin/asterisk -C $SNAP_DATA/asterisk/etc/asterisk/asterisk.conf -f
+    if [ ! -d $SNAP_DATA/asterisk/etc/asterisk ]; then
+        cp -r $SNAP/etc/asterisk $SNAP_DATA/asterisk/etc
+        cp $SNAP/etc/asterisk.conf $SNAP_DATA/asterisk/etc/asterisk
+        cp $SNAP/etc/http.conf $SNAP_DATA/asterisk/etc/asterisk
+        cp $SNAP/etc/manager.conf $SNAP_DATA/asterisk/etc/asterisk
+        cp $SNAP/etc/res_config_mysql.conf $SNAP_DATA/asterisk/etc/asterisk
+        cp $SNAP/etc/extconfig.conf $SNAP_DATA/asterisk/etc/asterisk
+    fi
+
+    while [ ! -S $MYSQLSOCK ]; do
+        sleep 1
+    done
+
+    $ATERISK_CMD -f
+}
+
+case $1 in
+start)
+    start_asterisk
+    ;;
+stop)
+    $ATERISK_CMD -rx "core stop gracefully"
+    ;;
+esac

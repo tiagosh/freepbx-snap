@@ -6,43 +6,50 @@ export ASTERISK_CMD="asterisk -C $INSTALL_PREFIX_DATA/etc/asterisk/asterisk.conf
 export MYSQLSOCK="$SNAP_DATA/mysql/mysql.sock"
 export ASTERISK_CTL="$SNAP_DATA/asterisk/var/run/asterisk/asterisk.ctl"
 
-if [ ! -d $SNAP_DATA/htdocs ]; then
-    while [ ! -S $MYSQLSOCK ]; do
-        sleep 1
-    done
+check_first_run()
+{
+    if [ ! -d $SNAP_DATA/htdocs ]; then
+        while [ ! -S $MYSQLSOCK ]; do
+            sleep 1
+        done
 
-    while [ ! -S $ASTERISK_CTL ]; do
-        sleep 1
-    done
+        while [ ! -S $ASTERISK_CTL ]; do
+            sleep 1
+        done
 
-    mkdir -p -m 750 $SNAP_DATA/apache/logs
+        mkdir -p -m 750 $SNAP_DATA/apache/logs
 
-    while [ ! -f $SNAP_DATA/mysql/freepbx_password_root ]; do
-        sleep 1
-    done
-    cp -r $SNAP/freepbx/ $SNAP_DATA/freepbx
-    pushd $SNAP_DATA/freepbx/
-    mkdir -p $SNAP_DATA/htdocs
-    mkdir -p $SNAP_DATA/asterisk/{bin,sbin}
-    mkdir -p $SNAP_DATA/asterisk/var/log/asterisk/cdr-csv
-    ./install -n --rootdb --dbhost=127.0.0.1 --dbpass="$(cat $SNAP_DATA/mysql/freepbx_password_root)" --dbuser=root --user=root --group=root --webroot=$SNAP_DATA/htdocs --ampbin=$SNAP_DATA/asterisk/bin --ampsbin=$SNAP_DATA/asterisk/sbin --astetcdir=$SNAP_DATA/asterisk/etc/asterisk
-    $SNAP_DATA/asterisk/bin/fwconsole chown
-    $SNAP_DATA/asterisk/bin/fwconsole moduleadmin installlocal
-    mysql --defaults-file=$SNAP_DATA/mysql/root.ini -D asterisk < $SNAP/etc/voicemail.sql
-    while [ ! -f $SNAP_DATA/asterisk/etc/asterisk/extensions_additional.conf ]; do
-        sleep 1
-    done
-    pass=$(cat $SNAP_DATA/asterisk/etc/asterisk/extensions_additional.conf | grep AMPDBPASS | cut -d" " -f3)
-    echo "dbpass = $pass" >> $SNAP_DATA/asterisk/etc/asterisk/res_config_mysql.conf
-    mysql --defaults-file=$SNAP_DATA/mysql/root.ini -D asterisk " UPDATE sipsettings SET data='no' where keyword='nat';"
-    mysql --defaults-file=$SNAP_DATA/mysql/root.ini -D asterisk " UPDATE sipsettings SET data='public' where keyword='nat_mode';"
-    $SNAP_DATA/asterisk/bin/retrieve_conf
-    # reload values
-    $ASTERISK_CMD -rx "core stop now"
-    popd
-    rm -rf $SNAP_DATA/freepbx
-fi
+        while [ ! -f $SNAP_DATA/mysql/freepbx_password_root ]; do
+            sleep 1
+        done
+        cp -r $SNAP/freepbx/ $SNAP_DATA/freepbx
+        pushd $SNAP_DATA/freepbx/
+        mkdir -p $SNAP_DATA/htdocs
+        mkdir -p $SNAP_DATA/asterisk/{bin,sbin}
+        mkdir -p $SNAP_DATA/asterisk/var/log/asterisk/cdr-csv
+        ./install -n --rootdb --dbhost=127.0.0.1 --dbpass="$(cat $SNAP_DATA/mysql/freepbx_password_root)" --dbuser=root --user=root --group=root --webroot=$SNAP_DATA/htdocs --ampbin=$SNAP_DATA/asterisk/bin --ampsbin=$SNAP_DATA/asterisk/sbin --astetcdir=$SNAP_DATA/asterisk/etc/asterisk
+        $SNAP_DATA/asterisk/bin/fwconsole chown
+        $SNAP_DATA/asterisk/bin/fwconsole moduleadmin installlocal
+        mysql --defaults-file=$SNAP_DATA/mysql/root.ini -D asterisk < $SNAP/etc/voicemail.sql
+        while [ ! -f $SNAP_DATA/asterisk/etc/asterisk/extensions_additional.conf ]; do
+            sleep 1
+        done
+        pass=$(cat $SNAP_DATA/asterisk/etc/asterisk/extensions_additional.conf | grep AMPDBPASS | cut -d" " -f3)
+        echo "dbpass = $pass" >> $SNAP_DATA/asterisk/etc/asterisk/res_config_mysql.conf
+        $SNAP_DATA/asterisk/bin/retrieve_conf
+        # reload values
+        $ASTERISK_CMD -rx "core stop now"
+        popd
+        rm -rf $SNAP_DATA/freepbx
+    fi
 
-rm $SNAP_DATA/mysql/freepbx_password_root
+    rm $SNAP_DATA/mysql/freepbx_password_root
+}
+
+case $2 in
+start)
+    check_first_run
+    ;;
+esac
 
 httpd -d $SNAP $@
