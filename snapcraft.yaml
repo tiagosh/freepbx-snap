@@ -4,7 +4,8 @@ summary: FreePBX
 description: |
  FreePBX is a web-based open source GUI (graphical user interface) that 
  controls and manages Asterisk (PBX), an open source communication server.
-#confinement: strict
+confinement: devmode
+grade: devel
 
 apps:
   fwconsole:
@@ -205,9 +206,7 @@ parts:
     source-branch: feature/support_no_setpriority
     after: [boost]
     configflags:
-      - -DDOWNLOAD_BOOST=1
       - -DWITH_BOOST=$SNAPCRAFT_STAGE/boost
-      - -DDOWNLOAD_BOOST_TIMEOUT=3600
       - -DWITH_INNODB_PAGE_CLEANER_PRIORITY=OFF
       - -DCMAKE_INSTALL_PREFIX=/
       - -DBUILD_CONFIG=mysql_release
